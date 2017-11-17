@@ -298,7 +298,6 @@ class SoftEtherAPI(object):
             'Online': ('int', [online]),
             'HubType': ('int', [hub_type])
         }
-
         return self.call_method('CreateHub', payload)
 
     def set_hub(self, hub_name=None, hashed_password=None, secure_password=None, online=None, hub_type=None):
@@ -572,7 +571,15 @@ class SoftEtherAPI(object):
 
         return self.call_method('SetAccessList', payload)
 
-    def create_user(self, hub_name=None, name=None, group_name=None, realname=None, note=None, created_time=None, updated_time=None, expire_time=None, num_login=None):
+    def create_user(self, hub_name=None, name=None, password=None, group_name=None, realname=None, note=None, created_time=None, updated_time=None, expire_time=None, num_login=None):
+        hashed_password = hashlib.new('sha')
+        hashed_password.update(str.encode(password))
+        hashed_password.update(str.encode(str.upper(name)))
+        hashed_password = hashed_password.digest()
+        secure_password = hashlib.new('sha')
+        secure_password.update(hashed_password)
+        secure_password.update(self.connect_response['random'][0])
+        
         payload = {
             'HubName': ('string', [hub_name]),
             'Name': ('string', [name]),
@@ -582,7 +589,11 @@ class SoftEtherAPI(object):
             'CreatedTime': ('int64', [created_time]),
             'UpdatedTime': ('int64', [updated_time]),
             'ExpireTime': ('int', [expire_time]),
-            'NumLogin': ('int', [num_login])
+            'NumLogin': ('int', [num_login]),
+            'AuthType': ('int', [1]),
+            'AuthData': ('raw', [password]),
+            'HashedKey': ('raw', [hashed_password]),
+            'NtLmSecureHash': ('raw', [secure_password.digest()])
         }
 
         return self.call_method('CreateUser', payload)
